@@ -1,4 +1,4 @@
-Pinch & Print – Gesture Photo Booth
+GestureSnap-AI – Gesture Photo Booth
 A gesture‑only photo booth web application that lets users capture images using hand gestures detected by MediaPipe. The app features:
 
 Two‑hand pinch to draw a live box around the area you want to capture.
