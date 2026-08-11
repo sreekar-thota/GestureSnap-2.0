@@ -5,409 +5,360 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>GestureSnap AI</title>
+    <title>GestureSnap </title>
 
     <!-- Fonts -->
 
-    <link rel="preconnect"
-          href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-    <link rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet">
+        rel="stylesheet">
 
     <!-- CSS -->
 
-    <link rel="stylesheet"
-          href="style.css">
+    <link rel="stylesheet" href="style.css">
 
 </head>
 
 <body>
 
-<!-- =========================
+    <!-- =========================
 BACKGROUND
 ========================= -->
 
-<div class="bg-gradient"></div>
+    <div class="bg-gradient"></div>
 
-<div class="bg-grid"></div>
+    <div class="bg-grid"></div>
 
-<!-- =========================
+    <!-- =========================
 HEADER
 ========================= -->
 
-<header>
+    <header>
 
-    <div class="logo">
+        <div class="logo">
 
-        <div class="logo-icon">
-            <svg class="aperture-logo" viewBox="0 0 100 100" width="38" height="38">
-                <defs>
-                    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#ff9900" />
-                        <stop offset="100%" stop-color="#ff5500" />
-                    </linearGradient>
-                </defs>
-                <circle cx="50" cy="50" r="44" fill="#0c0c0c" stroke="url(#orangeGrad)" stroke-width="6" />
-                <g fill="url(#orangeGrad)">
-                    <path d="M50,14 L75,38 L48,46 Z" />
-                    <path d="M78,28 L82,62 L56,50 Z" />
-                    <path d="M82,66 L56,86 L50,58 Z" />
-                    <path d="M50,86 L25,62 L52,54 Z" />
-                    <path d="M22,72 L18,38 L44,50 Z" />
-                    <path d="M18,34 L44,14 L50,42 Z" />
-                </g>
-                <circle cx="50" cy="50" r="14" fill="#000000" stroke="#ff7a00" stroke-width="3"/>
-            </svg>
+            <div class="logo-icon">
+                <svg class="aperture-logo" viewBox="0 0 100 100" width="38" height="38">
+                    <defs>
+                        <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff9900" />
+                            <stop offset="100%" stop-color="#ff5500" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="44" fill="#0c0c0c" stroke="url(#orangeGrad)" stroke-width="6" />
+                    <g fill="url(#orangeGrad)">
+                        <path d="M50,14 L75,38 L48,46 Z" />
+                        <path d="M78,28 L82,62 L56,50 Z" />
+                        <path d="M82,66 L56,86 L50,58 Z" />
+                        <path d="M50,86 L25,62 L52,54 Z" />
+                        <path d="M22,72 L18,38 L44,50 Z" />
+                        <path d="M18,34 L44,14 L50,42 Z" />
+                    </g>
+                    <circle cx="50" cy="50" r="14" fill="#000000" stroke="#ff7a00" stroke-width="3" />
+                </svg>
+            </div>
+
+            <div>
+
+                <h1>
+
+                    Gesture<span>Snap</span> 
+
+                </h1>
+
+                <p class="tagline">
+                    <span class="dot">●</span> Gesture <span class="dot">●</span> Capture <span class="dot">●</span>
+                    Puzzle <span class="dot">●</span> Print
+                </p>
+
+            </div>
+
         </div>
 
-        <div>
+        <div class="top-buttons">
 
-            <h1>
+            <button id="viewToggleBtn">
 
-                Gesture<span>Snap</span> AI
+                <span>⛶</span>
 
-            </h1>
+                Fullscreen
 
-            <p class="tagline">
-                <span class="dot">●</span> Gesture <span class="dot">●</span> Capture <span class="dot">●</span> Puzzle <span class="dot">●</span> Print
-            </p>
+            </button>
+
+            <button id="resetBtn">
+
+                <span>↻</span>
+
+                Reset
+
+            </button>
 
         </div>
 
-    </div>
+    </header>
 
-    <div class="top-buttons">
-
-        <button id="viewToggleBtn">
-
-            <span>⛶</span>
-
-            Fullscreen
-
-        </button>
-
-        <button id="resetBtn">
-
-            <span>↻</span>
-
-            Reset
-
-        </button>
-
-    </div>
-
-</header>
-
-<!-- =========================
+    <!-- =========================
 MAIN
 ========================= -->
 
-<main>
+    <main>
 
-<!-- =========================
+        <!-- =========================
 LEFT SIDE
 ========================= -->
 
-<section class="camera-section">
+        <section class="camera-section">
 
-<div class="camera-card">
+            <div class="camera-card">
 
-<div class="camera-top">
+                <div class="camera-top">
 
-<div class="live">
+                    <div class="live">
 
-<span class="live-dot"></span>
+                        <span class="live-dot"></span>
 
-LIVE CAMERA
+                        LIVE CAMERA
 
-</div>
+                    </div>
 
-<div
-id="statusPill"
-class="status">
+                    <div id="statusPill" class="status">
 
-Waiting...
+                        Waiting...
 
-</div>
+                    </div>
 
-</div>
+                </div>
 
-<div
-class="camera-frame"
-id="stage">
+                <div class="camera-frame" id="stage">
 
-<canvas
-id="stageCanvas">
+                    <canvas id="stageCanvas">
 
-</canvas>
+                    </canvas>
 
-<div
-id="photoCounter"
-class="photo-counter">
+                    <div id="photoCounter" class="photo-counter">
 
-0 / 3
+                        0 / 3
 
-</div>
+                    </div>
 
-<button
-id="clickBtn">
+                    <button id="clickBtn">
 
-Capture
+                        Capture
 
-</button>
+                    </button>
 
-<div
-id="countdownEl">
+                    <div id="countdownEl">
 
-3
+                        3
 
-</div>
+                    </div>
 
-<div
-id="flashEl">
+                    <div id="flashEl">
 
-</div>
+                    </div>
 
-<div
-id="puzzleOverlay">
+                    <div id="puzzleOverlay">
 
-<div
-id="puzzleLabel">
+                        <div id="puzzleLabel">
 
-Solve Puzzle
+                            Solve Puzzle
 
-</div>
+                        </div>
 
-<div
-id="puzzleGrid">
+                        <div id="puzzleGrid">
 
-<div
-id="successOverlay">
+                            <div id="successOverlay">
 
-Saved ✓
+                                Saved ✓
 
-</div>
+                            </div>
 
-</div>
+                        </div>
 
-</div>
+                    </div>
 
-</div>
+                </div>
 
-</div>
+            </div>
 
-<div class="tips">
+            <div class="tips">
 
-<div>
+                <div>
 
-🖐️ Use both hands to create the frame
+                    🖐️ Use both hands to create the frame
 
-</div>
+                </div>
 
-<div>
+                <div>
 
-🤏 Pinch to lock the frame
+                    🤏 Pinch to lock the frame
 
-</div>
+                </div>
 
-<div>
+                <div>
 
-📸 Pinch Capture or make a fist
+                    📸 Pinch Capture or make a fist
 
-</div>
+                </div>
 
-<div>
+                <div>
 
-🧩 Solve puzzle to save photo
+                    🧩 Solve puzzle to save photo
 
-</div>
+                </div>
 
-</div>
+            </div>
 
-</section>
-<!-- =========================
+        </section>
+        <!-- =========================
 RIGHT SIDEBAR
 ========================= -->
 
-<aside class="sidebar">
+        <aside class="sidebar">
 
-<div class="glass-card">
+            <div class="glass-card">
 
-<div class="card-title">
+                <div class="card-title">
 
-AI CONTROL PANEL
+                    CONTROL PANEL
 
-</div>
+                </div>
 
-<div class="theme-buttons">
+                <div class="theme-buttons">
 
-<button
-class="theme-btn active-toggle"
-data-theme="retro">
+                    <button class="theme-btn active-toggle" data-theme="retro">
 
-Retro
+                        Retro
 
-</button>
+                    </button>
 
-<button
-class="theme-btn"
-data-theme="white">
+                    <button class="theme-btn" data-theme="white">
 
-White
+                        White
 
-</button>
+                    </button>
 
-<button
-class="theme-btn"
-data-theme="wood">
+                    <button class="theme-btn" data-theme="wood">
 
-Wood
+                        Wood
 
-</button>
+                    </button>
 
-<button
-class="theme-btn"
-data-theme="noir">
+                    <button class="theme-btn" data-theme="noir">
 
-Dark
+                        Dark
 
-</button>
+                    </button>
 
-</div>
+                </div>
 
-</div>
+            </div>
 
-<!-- ========================= -->
+            <!-- ========================= -->
 
-<div
-class="glass-card strip-card"
-id="stripFrame">
+            <div class="glass-card strip-card" id="stripFrame">
 
-<div
-class="strip-heading"
-id="stripTitle">
+                <div class="strip-heading" id="stripTitle">
 
-PHOTO STRIP
+                    PHOTO STRIP
 
-</div>
+                </div>
 
-<div
-class="strip-slot empty"
-id="slot0">
+                <div class="strip-slot empty" id="slot0">
 
-PHOTO 01
+                    PHOTO 01
 
-</div>
+                </div>
 
-<div
-class="strip-slot empty"
-id="slot1">
+                <div class="strip-slot empty" id="slot1">
 
-PHOTO 02
+                    PHOTO 02
 
-</div>
+                </div>
 
-<div
-class="strip-slot empty"
-id="slot2">
+                <div class="strip-slot empty" id="slot2">
 
-PHOTO 03
+                    PHOTO 03
 
-</div>
+                </div>
 
-<button
-id="downloadBtn"
-class="download-btn"
-disabled>
+                <button id="downloadBtn" class="download-btn" disabled>
 
-⬇ Download Strip
+                    ⬇ Download Strip
 
-</button>
+                </button>
 
-</div>
+            </div>
 
 
 
-</aside>
-<!-- =========================
+        </aside>
+        <!-- =========================
 END MAIN
 ========================= -->
 
-</main>
+    </main>
 
-<!-- =========================
+    <!-- =========================
 FOOTER
 ========================= -->
 
-<footer>
+    <footer>
 
-<div class="footer-left">
+        <div class="footer-left">
 
-GestureSnap AI © 2026
+            GestureSnap © 2026
 
-</div>
+        </div>
 
 
 
-</footer>
+    </footer>
 
-<!-- =========================
+    <!-- =========================
 HIDDEN VIDEO
 ========================= -->
 
-<video
-id="video"
-playsinline
-autoplay
-muted
-style="display:none;">
+    <video id="video" playsinline autoplay muted style="display:none;">
 
-</video>
+    </video>
 
-<!-- =========================
+    <!-- =========================
 BACKGROUND EFFECTS
 ========================= -->
 
-<div class="floating-circle one"></div>
+    <div class="floating-circle one"></div>
 
-<div class="floating-circle two"></div>
+    <div class="floating-circle two"></div>
 
-<div class="floating-circle three"></div>
+    <div class="floating-circle three"></div>
 
-<div class="floating-circle four"></div>
+    <div class="floating-circle four"></div>
 
-<!-- =========================
+    <!-- =========================
 MEDIAPIPE
 ========================= -->
 
-<script
-src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
-crossorigin="anonymous">
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous">
+    </script>
 
-<script
-src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js">
+    </script>
 
-<script
-src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js">
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js">
+    </script>
 
-<!-- =========================
+    <!-- =========================
 YOUR SCRIPT
 ========================= -->
 
-<script
-src="script.js">
-</script>
+    <script src="script.js">
+    </script>
 
 </body>
 
