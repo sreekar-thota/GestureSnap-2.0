@@ -1,121 +1,130 @@
+# 📸 GestureSnap 2.0
 
-# 📸 GestureSnap
-
-An browser-based Photo Booth that enables touch-free photo capture using real-time hand gesture recognition. Built with HTML, CSS, JavaScript, and MediaPipe, the application allows users to interact naturally using hand gestures with and without touching the screen .
-
-## 🌐 Live Demo
-
-🔗 https://gesturesnap-ai.netlify.app
-
-## 💻 GitHub Repository
-
-🔗 https://github.com/sreekar-thota/GestureSnap-AI
+> A gesture-controlled AI photo booth that lets users capture photos using hand gestures and download their final photo strip through a QR code.
 
 ---
 
-## ✨ Features
+## ✨ Overview
 
-- 🤖 AI-powered hand gesture recognition
-- 📷 Real-time webcam integration
-- ✋ Touch-free photo capture
-- ⏳ Countdown timer before capture
-- 🧩 Interactive gesture-based puzzle mode
-- 🖼️ Photo gallery management
-- 🎞️ Downloadable photo strips
-- 📱 Responsive user interface
-- ⚡ Fast and lightweight browser-based application
+**GestureSnap 2.0** is an interactive, gesture-controlled photo booth application designed for Smart TVs, desktops, and mobile devices.
+
+Instead of using a traditional mouse or touchscreen, users can interact with the photo booth using simple hand gestures detected through the camera.
+
+The application captures **three photos**, creates a photo strip, generates a **QR code**, and allows users to scan the QR code with their phone to download their photo strip.
 
 ---
 
-## 🛠️ Tech Stack
+## 🎯 Key Features
 
-- HTML5
-- CSS3
-- JavaScript (ES6)
-- MediaPipe Hands
-- WebRTC Camera API
+### 📷 Gesture-Controlled Camera
 
----
+- Uses the device camera for live video.
+- Detects hand gestures in real time.
+- Provides a touch-free photo booth experience.
 
-## 📂 Project Structure
+### ✋ Hand Gesture Instructions
 
-```
-GestureSnap-AI/
-│── index.html
-│── style.css
-│── script.js
-│── README.md
-```
+The application guides the user through three simple steps:
 
----
+**STEP 1 — ✋ Show Both Hands**
 
-## 🚀 Getting Started
+Show both hands to begin the interaction.
 
-### Clone the Repository
+**STEP 2 — 🤏 Pinch to Lock Frame**
 
-```bash
-git clone https://github.com/sreekar-thota/GestureSnap-AI.git
-```
+Use a pinch gesture to create and lock the photo frame.
 
-### Open the Project
+**STEP 3 — ✊ Make a Fist to Capture**
 
-Simply open `index.html` in your browser or use VS Code Live Server.
+Make a fist to trigger the photo capture.
 
 ---
 
-## 📸 How It Works
+## 📸 Three-Photo Capture
 
-1. Allow camera permission.
-2. Show your hand in front of the camera.
-3. Create the required gesture.
-4. Countdown starts automatically.
-5. Photo is captured.
-6. View, download, or print your photos.
+GestureSnap captures a total of **3 photographs**.
 
----
+The interface displays the current photo progress:
 
-## 🎯 Future Improvements
+```text
+PHOTO 0 / 3
+PHOTO 1 / 3
+PHOTO 2 / 3
+PHOTO 3 / 3
+GestureSnap 2.0/
+│
+├── .vscode/
+│   └── settings.json
+│
+├── uploads/
+│   └── Generated/captured files
+│
+├── download.html
+├── index.html
+├── README.md
+├── script.js
+├── server.py
+└── style.css
+🛠️ Technologies Used
+Frontend
+HTML5
+CSS3
+JavaScript
+Web APIs
+Camera API
+Gesture Recognition
+Hand tracking
+Gesture detection
+Real-time webcam processing
+Backend
+Python
+Local HTTP server
+File handling
+QR generation and download functionality
+🖼️ Photo Strip
+📱 QR Code Download
+⏱️ QR Code Timer
+🔄 Reset
+🖥️ Fullscreen Mode
+📺 Smart TV Support
+📱 Responsive Design
+🎮 How to Use
+1. Open GestureSnap
+        ↓
+2. Allow camera access
+        ↓
+3. Show both hands
+        ↓
+4. Pinch to lock the frame
+        ↓
+5. Make a fist
+        ↓
+6. Countdown begins
+        ↓
+7. Photo captured
+        ↓
+8. Repeat until 3 photos are captured
+        ↓
+9. Photo strip generated
+        ↓
+10. QR code generated
+        ↓
+11. Scan QR with phone
+        ↓
+12. Download photo strip
+        ↓
+13. QR expires after 60 seconds
+        ↓
+14. Booth resets for next user
+🎯 Project Goals
 
-- 🎭 AR Filters
-- 🌄 AI Background Replacement
-- 🗣️ Voice Commands
-- 📤 Social Media Sharing
-- ☁️ Cloud Storage Integration
-- 📱 Progressive Web App (PWA)
+GestureSnap was created to make photo booths:
 
----
+More interactive
+Touch-free
+Easy to use
+Fun and engaging
+Suitable for public environments
+Compatible with large displays
 
-## 👨‍💻 Author
-
-**Sreekar Thota**
-
-GitHub: https://github.com/sreekar-thota
-
----
-
-## ⭐ Support
-
-If you like this project, please give it a ⭐ on GitHub!
-
-GestureSnap – Gesture Photo Booth
-A gesture‑only photo booth web application that lets users capture images using hand gestures detected by MediaPipe. The app features:
-
-Two‑hand pinch to draw a live box around the area you want to capture.
-Hold‑steady detection to lock the box.
-Pinch‑Click or fist to trigger the shutter.
-Film‑style effects (grayscale, contrast, grain, vignette).
-Puzzle overlay – a 3×3 tile scramble that must be solved before the photo is saved to the strip.
-Customizable strip themes (Retro, White, Wood, Noir).
-Downloadable photo strip once three photos are captured.
-Demo
-Open index.html in a modern browser (Chrome/Edge) and allow camera access.
-
-Project Structure
-├── index.html      # Main HTML file – includes inline CSS and JS
-├── style.css       # All styling extracted from the original page
-├── README.md       # This document
-Setup & Development
-Clone the repository (or just open the folder).
-Serve the files via a local web server (e.g., npx -y http-server ./ or any static file server).
-Open the page in a browser and grant camera permissions.
-
+The goal is to provide a hands-free photo booth experience using computer vision and gesture recognition.

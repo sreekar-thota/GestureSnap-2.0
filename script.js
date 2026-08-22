@@ -17,9 +17,8 @@ const CONFIG = {
   //   that stays inside the band is ignored, so trembling fingers near the
   //   threshold won't cause rapid pinch/unpinch flicker.
 
-  // How many of the 4 non-thumb fingers must be "curled" (tip closer to
-  // wrist than its pip knuckle is to the wrist) to count as a fist.
-  FIST_CURL_COUNT: 3,
+  MIN_STABLE_FRAMES: 2, // reduced to respond faster to gestures
+  FIST_CURL_COUNT: 3, // require three non‑thumb fingers curled for a fist
 
   // Two-hand rectangle stability check (used to "lock" the box):
   STABILITY_TOLERANCE_PX: 22,  // allowed drift per corner before the hold timer resets
@@ -35,7 +34,7 @@ const CONFIG = {
   // A hand must be tracked for this many consecutive frames before its
   // gestures (pinch/fist) are trusted. Filters out one-or-two-frame "ghost"
   // hand detections that would otherwise register as a spurious extra pinch.
-  MIN_STABLE_FRAMES: 4,
+
 
   // Film grain strength (0 = none, ~25 = fairly heavy). Applied as random
   // +/- noise per color channel per pixel.
@@ -246,8 +245,57 @@ let box = null;
 let lockedBox = null;
 let stableAnchor = null;
 const savedPhotos = [];
+let qrTimerInterval = null;
+
+function startQrCountdown(seconds = 60) {
+  if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
+  let timeLeft = seconds;
+  const timerEl = document.getElementById('qrTimerEl');
+  if (timerEl) timerEl.textContent = `${timeLeft}s`;
+
+  qrTimerInterval = setInterval(() => {
+    timeLeft--;
+    if (timerEl) timerEl.textContent = `${timeLeft}s`;
+    if (timeLeft <= 0) {
+      clearInterval(qrTimerInterval);
+      qrTimerInterval = null;
+      resetSession();
+    }
+  }, 1000);
+}
+
 function setStatus(text){ statusPill.textContent = text; }
-function refreshCounter(){ photoCounterEl.textContent = `${photoCount} / 3`; }
+function updateProgressDots() {
+  const activeIdx = Math.min(photoCount, 2);
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    if (dot) {
+      if (i === activeIdx && photoCount < 3) {
+        dot.textContent = '●';
+        dot.className = 'dot-item active';
+      } else if (i < photoCount) {
+        dot.textContent = '●';
+        dot.className = 'dot-item active';
+      } else {
+        dot.textContent = '○';
+        dot.className = 'dot-item inactive';
+      }
+    }
+  }
+}
+
+function refreshCounter(){
+  const numEl = document.getElementById('counterNum');
+  if (numEl) {
+    numEl.classList.remove('count-up-anim');
+    void numEl.offsetWidth;
+    numEl.textContent = photoCount;
+    numEl.classList.add('count-up-anim');
+  } else if (photoCounterEl) {
+    photoCounterEl.textContent = `${photoCount} / 3`;
+  }
+  updateProgressDots();
+}
 function updateStability(p1,p2){
   const now = performance.now();
   if(!stableAnchor){ stableAnchor = {p1,p2,start:now}; return; }
@@ -292,8 +340,23 @@ function triggerCapture(){
   appState = 'countdown'; clickBtn.classList.remove('show'); startCountdown();
 }
 function startCountdown(){
-  let n = 3; countdownEl.textContent = n; countdownEl.style.display = 'flex'; setStatus('Get ready…');
-  const iv = setInterval(()=>{ n--; if(n>0){ countdownEl.textContent = n; } else { clearInterval(iv); countdownEl.style.display = 'none'; doCapture(); } }, CONFIG.COUNTDOWN_STEP_MS);
+  // Ensure any previous countdown is cleared
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  let n = 3;
+  countdownEl.textContent = n;
+  countdownEl.style.display = 'flex';
+  setStatus('Get ready…');
+  countdownInterval = setInterval(() => {
+    n--;
+    if (n > 0) {
+      countdownEl.textContent = n;
+    } else {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      countdownEl.style.display = 'none';
+      doCapture();
+    }
+  }, CONFIG.COUNTDOWN_STEP_MS);
 }
 function playShutterSound(){
   try{
@@ -317,8 +380,24 @@ function playShutterSound(){
   }catch(e){}
 }
 function flashScreen(){ flashEl.classList.remove('flashing'); void flashEl.offsetWidth; flashEl.classList.add('flashing'); }
+function showCaptureFeedback() {
+  const el = document.getElementById('captureFeedback');
+  if (!el) return;
+  el.classList.remove('hidden');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => {
+      el.classList.add('hidden');
+    }, 300);
+  }, 850);
+}
+
 function doCapture(){
-  appState = 'capturing'; flashScreen(); playShutterSound();
+  appState = 'capturing';
+  flashScreen();
+  playShutterSound();
   const b = lockedBox;
   const x = Math.max(0, Math.round(b.x)), y = Math.max(0, Math.round(b.y));
   const w = Math.min(cleanCanvas.width - x, Math.round(b.w));
@@ -327,9 +406,67 @@ function doCapture(){
   shot.width = w; shot.height = h;
   shot.getContext('2d').drawImage(cleanCanvas, x, y, w, h, 0, 0, w, h);
   applyFilmEffect(shot);
+
+  savedPhotos.push(shot);
+  photoCount++;
+  refreshCounter();
+  showCaptureFeedback();
+
+  const progressEl = document.getElementById('progressIndicator');
+  if (progressEl) {
+    if (photoCount === 1) progressEl.textContent = '● ● ○';
+    else if (photoCount >= 2) progressEl.textContent = '● ● ●';
+  }
+
+  // Show captured overlay
+  const countdownEl = document.getElementById('countdownEl');
+  if (countdownEl) {
+    countdownEl.textContent = '📸 CAPTURED!';
+    countdownEl.style.display = 'flex';
+    setTimeout(() => { countdownEl.style.display = 'none'; }, 800);
+  }
+  appState = 'idle';
   box = null;
-  setupPuzzle(shot);
+  lockedBox = null;
+  stableAnchor = null;
+  clickBtn.classList.remove('show');
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  
+  if (photoCount >= 3) {
+    setStatus('🎉 3 Photos Captured! Generating your QR Code...');
+    setTimeout(() => {
+      uploadAndGenerateQR();
+    }, 600);
+  } else {
+    setStatus(`Photo ${photoCount} captured — show two pinching hands to draw box`);
+  }
 }
+// Attach reset button listener
+if (resetBtn) resetBtn.addEventListener('click', resetSession);
+
+function resetSession(){
+  savedPhotos.length = 0;
+  photoCount = 0;
+  refreshCounter();
+  const progressEl = document.getElementById('progressIndicator');
+  if (progressEl) progressEl.textContent = '● ○ ○';
+  appState = 'idle';
+  box = null;
+  lockedBox = null;
+  stableAnchor = null;
+  clickBtn.classList.remove('show');
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
+  if (countdownEl) countdownEl.style.display = 'none';
+
+  const qrModal = document.getElementById('qrModal');
+  if (qrModal) qrModal.classList.add('hidden');
+  const qrcodeContainer = document.getElementById('qrcode');
+  if (qrcodeContainer) qrcodeContainer.innerHTML = '';
+
+  setStatus('Session reset – show both hands to start');
+}
+
 function applyFilmEffect(canvasEl){
   const c = canvasEl.getContext('2d');
   const w = canvasEl.width, h = canvasEl.height;
@@ -357,6 +494,7 @@ function applyFilmEffect(canvasEl){
   c.globalCompositeOperation = 'source-over';
 }
 let puzzleState = null;
+let countdownInterval = null; // global interval for countdown
 function setupPuzzle(photoCanvas){
   appState = 'puzzle';
   box = null;
@@ -428,6 +566,13 @@ function addPhotoToStrip(photoCanvas) {
   savedPhotos.push(photoCanvas);
   photoCount = savedPhotos.length;
   refreshCounter();
+
+  // Update progress indicator dots
+  const progressEl = document.getElementById('progressIndicator');
+  if (progressEl) {
+    const dots = ['● ○ ○', '● ● ○', '● ● ●'];
+    progressEl.textContent = dots[Math.min(photoCount - 1, 2)];
+  }
 
   const slotIndex = savedPhotos.length - 1;
   const slotEl = document.getElementById(`slot${slotIndex}`);
@@ -628,8 +773,8 @@ function resetPhotoStrip() {
   setStatus('Show two pinching hands to draw a box');
 }
 
-function downloadStrip() {
-  if (savedPhotos.length === 0) return;
+function generateStripCanvas() {
+  if (savedPhotos.length === 0) return null;
   const padding = 20;
   const headerHeight = 60;
   const footerHeight = 40;
@@ -682,15 +827,109 @@ function downloadStrip() {
   sctx.font = '12px Poppins, sans-serif';
   sctx.fillText(new Date().toLocaleDateString() + ' • GestureSnap AI', stripW / 2, currentY + 15);
 
+  return stripCanvas;
+}
+
+function downloadStrip() {
+  if (savedPhotos.length === 0) {
+    setStatus('No photos captured yet — show hands to capture photos!');
+    return;
+  }
+  const stripCanvas = generateStripCanvas();
+  if (!stripCanvas) return;
   const link = document.createElement('a');
   link.download = `gesturesnap_strip_${Date.now()}.png`;
   link.href = stripCanvas.toDataURL('image/png');
   link.click();
 }
 
+async function uploadAndGenerateQR() {
+  const captureFb = document.getElementById('captureFeedback');
+  if (captureFb) {
+    captureFb.classList.remove('show');
+    captureFb.classList.add('hidden');
+  }
+
+  const stripCanvas = generateStripCanvas();
+  if (!stripCanvas) return;
+
+  const qrStripPreview = document.getElementById('qrStripPreview');
+  const qrModal = document.getElementById('qrModal');
+  const qrcodeContainer = document.getElementById('qrcode');
+
+  if (qrStripPreview) {
+    qrStripPreview.src = stripCanvas.toDataURL('image/png');
+  }
+
+  if (qrcodeContainer) {
+    qrcodeContainer.innerHTML = '<span style="color:#888;font-size:13px;font-weight:600;">Generating QR Code...</span>';
+  }
+
+  if (qrModal) {
+    qrModal.classList.remove('hidden');
+  }
+
+  try {
+    const dataUrl = stripCanvas.toDataURL('image/png');
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Upload response status ${res.status}: ${errText}`);
+    }
+    const json = await res.json();
+    if (json && json.success) {
+      const targetUrl = json.fullQrUrl || (window.location.origin + json.downloadUrl);
+      if (qrcodeContainer) {
+        qrcodeContainer.innerHTML = '';
+        new QRCode(qrcodeContainer, {
+          text: targetUrl,
+          width: 170,
+          height: 170,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        setStatus('QR Code generated! Scan with your phone.');
+      }
+      startQrCountdown(60);
+    } else {
+      throw new Error('Upload response error');
+    }
+  } catch (err) {
+    console.warn('Backend upload error, fallback:', err);
+    if (qrcodeContainer) {
+      qrcodeContainer.innerHTML = '';
+      const fallbackUrl = window.location.origin + '/download.html';
+      new QRCode(qrcodeContainer, {
+        text: fallbackUrl,
+        width: 170,
+        height: 170,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.L
+      });
+      setStatus('QR Code ready!');
+    }
+    startQrCountdown(60);
+  }
+}
+
 function attachPuzzleControls(){
-  if (resetBtn) resetBtn.addEventListener('click', resetPhotoStrip);
+  if (resetBtn) resetBtn.addEventListener('click', resetSession);
   if (downloadBtn) downloadBtn.addEventListener('click', downloadStrip);
+  const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+  if (modalDownloadBtn) modalDownloadBtn.addEventListener('click', downloadStrip);
+  const closeQrModalBtn = document.getElementById('closeQrModalBtn');
+  if (closeQrModalBtn) {
+    closeQrModalBtn.addEventListener('click', () => {
+      const qrModal = document.getElementById('qrModal');
+      if (qrModal) qrModal.classList.add('hidden');
+    });
+  }
   if (viewToggleBtn) {
     viewToggleBtn.addEventListener('click', () => {
       if (!document.fullscreenElement) {

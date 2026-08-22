@@ -42,38 +42,17 @@ HEADER
 
         <div class="logo">
 
-            <div class="logo-icon">
-                <svg class="aperture-logo" viewBox="0 0 100 100" width="38" height="38">
-                    <defs>
-                        <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#ff9900" />
-                            <stop offset="100%" stop-color="#ff5500" />
-                        </linearGradient>
-                    </defs>
-                    <circle cx="50" cy="50" r="44" fill="#0c0c0c" stroke="url(#orangeGrad)" stroke-width="6" />
-                    <g fill="url(#orangeGrad)">
-                        <path d="M50,14 L75,38 L48,46 Z" />
-                        <path d="M78,28 L82,62 L56,50 Z" />
-                        <path d="M82,66 L56,86 L50,58 Z" />
-                        <path d="M50,86 L25,62 L52,54 Z" />
-                        <path d="M22,72 L18,38 L44,50 Z" />
-                        <path d="M18,34 L44,14 L50,42 Z" />
-                    </g>
-                    <circle cx="50" cy="50" r="14" fill="#000000" stroke="#ff7a00" stroke-width="3" />
-                </svg>
-            </div>
-
             <div>
 
                 <h1>
 
-                    Gesture<span>Snap</span> 
+                    Gesture<span>Snap</span>
 
                 </h1>
 
                 <p class="tagline">
                     <span class="dot">●</span> Gesture <span class="dot">●</span> Capture <span class="dot">●</span>
-                    Puzzle <span class="dot">●</span> Print
+                    Print
                 </p>
 
             </div>
@@ -89,13 +68,13 @@ HEADER
                 Fullscreen
 
             </button>
-
-            <button id="resetBtn">
-
+            <button id="resetBtn" title="Reset session">
                 <span>↻</span>
-
                 Reset
-
+            </button>
+            <button id="downloadBtn" title="Download Photo Strip">
+                <span>⬇</span>
+                Download Strip
             </button>
 
         </div>
@@ -141,11 +120,16 @@ LEFT SIDE
                     </canvas>
 
                     <div id="photoCounter" class="photo-counter">
-
-                        0 / 3
-
+                        <span class="counter-num" id="counterNum">0</span>
+                        <span class="counter-slash">/</span>
+                        <span class="counter-total">3</span>
                     </div>
-
+                    <div id="progressIndicator" class="progress-dots-container">
+                        <span class="dot-item active" id="dot0">●</span>
+                        <span class="dot-item inactive" id="dot1">○</span>
+                        <span class="dot-item inactive" id="dot2">○</span>
+                    </div>
+                    <div id="captureFeedback" class="capture-feedback hidden">📸 CAPTURED!</div>
                     <button id="clickBtn">
 
                         Capture
@@ -162,142 +146,35 @@ LEFT SIDE
 
                     </div>
 
-                    <div id="puzzleOverlay">
 
-                        <div id="puzzleLabel">
-
-                            Solve Puzzle
-
-                        </div>
-
-                        <div id="puzzleGrid">
-
-                            <div id="successOverlay">
-
-                                Saved ✓
-
-                            </div>
-
-                        </div>
-
-                    </div>
 
                 </div>
 
             </div>
 
             <div class="tips">
-
-                <div>
-
-                    🖐️ Use both hands to create the frame
-
+                <div class="instruction-card">
+                    <div class="emoji">✋</div>
+                    <div class="instruction-text">Show Both Hands</div>
                 </div>
-
-                <div>
-
-                    🤏 Pinch to lock the frame
-
+                <div class="instruction-card">
+                    <div class="emoji">🤏</div>
+                    <div class="instruction-text">Pinch to Lock Frame</div>
                 </div>
-
-                <div>
-
-                    📸 Pinch Capture or make a fist
-
+                <div class="instruction-card">
+                    <div class="emoji">✊</div>
+                    <div class="instruction-text">Make a Fist to Capture</div>
                 </div>
-
-                <div>
-
-                    🧩 Solve puzzle to save photo
-
-                </div>
-
             </div>
 
         </section>
+        <!-- Photo strip preview container -->
+        <div id="stripPreviewContainer" class="strip-preview hidden"></div>
         <!-- =========================
 RIGHT SIDEBAR
 ========================= -->
 
-        <aside class="sidebar">
 
-            <div class="glass-card">
-
-                <div class="card-title">
-
-                    CONTROL PANEL
-
-                </div>
-
-                <div class="theme-buttons">
-
-                    <button class="theme-btn active-toggle" data-theme="retro">
-
-                        Retro
-
-                    </button>
-
-                    <button class="theme-btn" data-theme="white">
-
-                        White
-
-                    </button>
-
-                    <button class="theme-btn" data-theme="wood">
-
-                        Wood
-
-                    </button>
-
-                    <button class="theme-btn" data-theme="noir">
-
-                        Dark
-
-                    </button>
-
-                </div>
-
-            </div>
-
-            <!-- ========================= -->
-
-            <div class="glass-card strip-card" id="stripFrame">
-
-                <div class="strip-heading" id="stripTitle">
-
-                    PHOTO STRIP
-
-                </div>
-
-                <div class="strip-slot empty" id="slot0">
-
-                    PHOTO 01
-
-                </div>
-
-                <div class="strip-slot empty" id="slot1">
-
-                    PHOTO 02
-
-                </div>
-
-                <div class="strip-slot empty" id="slot2">
-
-                    PHOTO 03
-
-                </div>
-
-                <button id="downloadBtn" class="download-btn" disabled>
-
-                    ⬇ Download Strip
-
-                </button>
-
-            </div>
-
-
-
-        </aside>
         <!-- =========================
 END MAIN
 ========================= -->
@@ -312,11 +189,9 @@ FOOTER
 
         <div class="footer-left">
 
-            GestureSnap © 2026
+            GestureSnap © 2026 — By Sreekar Thota
 
         </div>
-
-
 
     </footer>
 
@@ -341,7 +216,7 @@ BACKGROUND EFFECTS
     <div class="floating-circle four"></div>
 
     <!-- =========================
-MEDIAPIPE
+MEDIAPIPE & QRCODE
 ========================= -->
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous">
@@ -352,6 +227,38 @@ MEDIAPIPE
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js">
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+    </script>
+
+    <!-- =========================
+QR MODAL
+========================= -->
+    <div id="qrModal" class="qr-modal hidden">
+        <div class="qr-modal-content">
+            <div class="qr-header">
+                <h2>🎉 YOUR PHOTO STRIP IS READY!</h2>
+                <button id="closeQrModalBtn" class="close-modal-btn">✕</button>
+            </div>
+            <div class="qr-body">
+                <div class="strip-preview-col">
+                    <img id="qrStripPreview" alt="Final Photo Strip" />
+                </div>
+                <div class="qr-code-col">
+                    <h3>📱 SCAN TO DOWNLOAD</h3>
+                    <div id="qrcode"></div>
+                    <div class="qr-timer-box">
+                        <div class="qr-timer-title">📱 QR AVAILABLE FOR</div>
+                        <div id="qrTimerEl" class="qr-timer-countdown">60s</div>
+                    </div>
+                    <p class="qr-instructions">Scan the QR code with your phone to download your photo strip.</p>
+                    <button id="modalDownloadBtn" class="download-btn-large">
+                        <span>⬇</span> Download Strip
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- =========================
 YOUR SCRIPT

@@ -1,0 +1,4 @@
+uploads/*.png
+.vscode/
+__pycache__/
+*.pyc
