@@ -131,15 +131,13 @@ The goal is to provide a hands-free photo booth experience using computer vision
 
 ---
 
-## 🚀 Vercel Deployment
+## 🚀 Netlify Deployment
 
-GestureSnap 2.0 is fully optimized for single-click deployment on **Vercel**.
+GestureSnap 2.0 is fully optimized for single-click deployment on **Netlify**.
 
 ### Steps to Deploy:
-1. Push this repository to GitHub or import it directly into **Vercel**.
-2. Deploy the project on Vercel (static files and `/api` serverless endpoints will be configured automatically).
-3. **Attach Vercel Blob Storage** (Optional, for persistent production uploads across serverless instances):
-   - Go to your project dashboard on Vercel.
-   - Click on the **Storage** tab and create a **Blob** store.
-   - Link the Blob store to your project environment (`BLOB_READ_WRITE_TOKEN` will be automatically injected).
-4. Scanning the generated QR code from any mobile device will now open the hosted Vercel URL (e.g., `https://your-app.vercel.app/download.html?id=...`) and allow instantaneous photo strip downloads worldwide.
+1. Push this repository to GitHub or import it directly into **Netlify**.
+2. Deploy the site on Netlify (`netlify.toml` handles routing and functions automatically).
+3. Netlify Functions (`/.netlify/functions/upload` and `/.netlify/functions/download`) use **Netlify Blobs** (`@netlify/blobs`) for persistent storage across serverless function invocations.
+4. Scanning the generated QR code from any mobile device opens the hosted Netlify URL (e.g., `https://your-site.netlify.app/download.html?id=...`) and allows instantaneous photo strip downloads worldwide.
+
