@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 exports.handler = async (event, context) => {
-  // CORS Headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -47,38 +46,44 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const filename = `strip_${Date.now()}.png`;
+    // Generate unique key for Netlify Blobs storage
+    const uniqueSuffix = Math.random().toString(36).substring(2, 8);
+    const filename = `strip_${Date.now()}_${uniqueSuffix}.png`;
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // Store image in Netlify Blobs storage
+    // 1. Primary storage: Store image in Netlify Blobs "uploads" store
+    let storedInBlob = false;
     try {
       const { getStore } = require('@netlify/blobs');
       const store = getStore('uploads');
       await store.set(filename, buffer);
+      storedInBlob = true;
     } catch (blobErr) {
       console.warn('Netlify Blobs upload failed or not configured, using local fallback:', blobErr.message);
     }
 
-    // Local filesystem fallback (/tmp for serverless runtime, uploads/ for local dev)
-    try {
-      const tmpPath = path.join('/tmp', filename);
-      fs.writeFileSync(tmpPath, buffer);
-    } catch (e) {}
+    // 2. Secondary fallback for local dev environments
+    if (!storedInBlob) {
+      try {
+        const tmpPath = path.join('/tmp', filename);
+        fs.writeFileSync(tmpPath, buffer);
+      } catch (e) {}
 
-    try {
-      const uploadsDir = path.join(process.cwd(), 'uploads');
-      if (fs.existsSync(uploadsDir)) {
-        fs.writeFileSync(path.join(uploadsDir, filename), buffer);
-      }
-    } catch (e) {}
+      try {
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+          fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+        }
+      } catch (e) {}
+    }
 
     // Determine host for QR URL dynamically using event headers
     const reqHeaders = event.headers || {};
     const protocol = reqHeaders['x-forwarded-proto'] || 'https';
     const host = reqHeaders['x-forwarded-host'] || reqHeaders['host'] || 'localhost:8888';
 
-    const downloadPath = `/download.html?id=${filename}`;
+    const downloadPath = `/download.html?id=${encodeURIComponent(filename)}`;
     const fullQrUrl = `${protocol}://${host}${downloadPath}`;
 
     return {

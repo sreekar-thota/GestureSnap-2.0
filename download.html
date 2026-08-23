@@ -190,7 +190,7 @@
     <script>
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const photoParam = urlParams.get('url') || urlParams.get('id');
+            const photoParam = urlParams.get('id') || urlParams.get('url');
             const stripImg = document.getElementById('stripPreviewImg');
             const downloadBtn = document.getElementById('downloadBtn');
 
@@ -203,17 +203,15 @@
                     downloadUrl = `/api/download?url=${encodeURIComponent(photoParam)}&download=1`;
                 } else {
                     const cleanId = photoParam.replace(/[^a-zA-Z0-9_.-]/g, '');
-                    previewUrl = `/api/download?id=${cleanId}`;
-                    downloadUrl = `/api/download?id=${cleanId}&download=1`;
+                    previewUrl = `/api/download?id=${encodeURIComponent(cleanId)}`;
+                    downloadUrl = `/api/download?id=${encodeURIComponent(cleanId)}&download=1`;
                 }
 
                 stripImg.src = previewUrl;
 
                 downloadBtn.addEventListener('click', function() {
-                    const dateStr = new Date().toISOString().slice(0, 10);
                     const link = document.createElement('a');
                     link.href = downloadUrl;
-                    link.download = `GestureSnap-PhotoStrip-${dateStr}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);

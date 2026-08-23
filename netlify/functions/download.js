@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
   try {
     let imageBuffer = null;
 
-    // 1. Try Netlify Blobs storage
+    // 1. Primary storage: Retrieve exact key using Netlify Blobs "uploads" store
     try {
       const { getStore } = require('@netlify/blobs');
       const store = getStore('uploads');
@@ -58,7 +58,7 @@ exports.handler = async (event, context) => {
       console.warn('Netlify Blobs fetch failed, trying local storage fallback:', blobErr.message);
     }
 
-    // 2. Fallback to local /tmp or uploads directory
+    // 2. Local dev fallback
     if (!imageBuffer) {
       const tmpPath = path.join('/tmp', safeFilename);
       const uploadsPath = path.join(process.cwd(), 'uploads', safeFilename);
@@ -84,9 +84,19 @@ exports.handler = async (event, context) => {
       'Cache-Control': 'public, max-age=31536000, immutable',
     };
 
-    if (query.download === '1' || query.download === 'true') {
-      const dateStr = new Date().toISOString().slice(0, 10);
-      responseHeaders['Content-Disposition'] = `attachment; filename="GestureSnap-PhotoStrip-${dateStr}.png"`;
+    const isDownload = query.download === '1' || query.download === 'true';
+
+    if (isDownload) {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      const uniqueTag = safeFilename.replace(/^strip_/, '').replace(/\.png$/, '');
+      const uniqueFilename = `GestureSnap-PhotoStrip-${dateStr}-${uniqueTag}.png`;
+
+      responseHeaders['Content-Disposition'] = `attachment; filename="${uniqueFilename}"`;
+    } else {
+      // Preview mode: return Content-Disposition: inline
+      responseHeaders['Content-Disposition'] = 'inline';
     }
 
     return {
