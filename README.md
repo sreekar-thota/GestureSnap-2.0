@@ -128,3 +128,18 @@ Suitable for public environments
 Compatible with large displays
 
 The goal is to provide a hands-free photo booth experience using computer vision and gesture recognition.
+
+---
+
+## 🚀 Vercel Deployment
+
+GestureSnap 2.0 is fully optimized for single-click deployment on **Vercel**.
+
+### Steps to Deploy:
+1. Push this repository to GitHub or import it directly into **Vercel**.
+2. Deploy the project on Vercel (static files and `/api` serverless endpoints will be configured automatically).
+3. **Attach Vercel Blob Storage** (Optional, for persistent production uploads across serverless instances):
+   - Go to your project dashboard on Vercel.
+   - Click on the **Storage** tab and create a **Blob** store.
+   - Link the Blob store to your project environment (`BLOB_READ_WRITE_TOKEN` will be automatically injected).
+4. Scanning the generated QR code from any mobile device will now open the hosted Vercel URL (e.g., `https://your-app.vercel.app/download.html?id=...`) and allow instantaneous photo strip downloads worldwide.

@@ -190,16 +190,24 @@
     <script>
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const photoId = urlParams.get('id');
+            const photoParam = urlParams.get('url') || urlParams.get('id');
             const stripImg = document.getElementById('stripPreviewImg');
             const downloadBtn = document.getElementById('downloadBtn');
 
-            if (photoId) {
-                const cleanId = photoId.replace(/[^a-zA-Z0-9_.-]/g, '');
-                const imageUrl = `/uploads/${cleanId}`;
-                const downloadUrl = `/api/download?id=${cleanId}`;
+            if (photoParam) {
+                let previewUrl = '';
+                let downloadUrl = '';
 
-                stripImg.src = imageUrl;
+                if (photoParam.startsWith('http://') || photoParam.startsWith('https://')) {
+                    previewUrl = photoParam;
+                    downloadUrl = `/api/download?url=${encodeURIComponent(photoParam)}&download=1`;
+                } else {
+                    const cleanId = photoParam.replace(/[^a-zA-Z0-9_.-]/g, '');
+                    previewUrl = `/api/download?id=${cleanId}`;
+                    downloadUrl = `/api/download?id=${cleanId}&download=1`;
+                }
+
+                stripImg.src = previewUrl;
 
                 downloadBtn.addEventListener('click', function() {
                     const dateStr = new Date().toISOString().slice(0, 10);
