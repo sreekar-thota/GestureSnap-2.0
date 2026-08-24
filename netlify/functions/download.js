@@ -1,3 +1,4 @@
+try { require('dotenv').config(); } catch (e) {}
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -5,7 +6,7 @@ exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization',
   };
 
   if (event.httpMethod === 'OPTIONS') {
@@ -75,9 +76,12 @@ exports.handler = async (event, context) => {
     const arrayBuffer = await blobData.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
+    const ext = path.extname(safeFilename).toLowerCase();
+    const contentType = (ext === '.jpg' || ext === '.jpeg') ? 'image/jpeg' : 'image/png';
+
     const responseHeaders = {
       ...headers,
-      'Content-Type': 'image/png',
+      'Content-Type': contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
     };
 

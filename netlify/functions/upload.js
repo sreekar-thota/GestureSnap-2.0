@@ -1,10 +1,12 @@
+try { require('dotenv').config(); } catch (e) {}
 const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization',
+    'Content-Type': 'application/json',
   };
 
   if (event.httpMethod === 'OPTIONS') {
@@ -31,10 +33,7 @@ exports.handler = async (event, context) => {
       console.error('Supabase configuration error: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing from environment.');
       return {
         statusCode: 500,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           success: false,
           error: 'Server configuration error: Supabase credentials missing.',
@@ -63,8 +62,12 @@ exports.handler = async (event, context) => {
       };
     }
 
+    const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
+    const contentType = mimeMatch ? mimeMatch[1] : 'image/png';
+    const ext = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';
+
     const uniqueSuffix = Math.random().toString(36).substring(2, 8);
-    const filename = `strip_${Date.now()}_${uniqueSuffix}.png`;
+    const filename = `strip_${Date.now()}_${uniqueSuffix}.${ext}`;
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
@@ -107,7 +110,7 @@ exports.handler = async (event, context) => {
     const { error: uploadError } = await supabase.storage
       .from('GestureSnap')
       .upload(filename, buffer, {
-        contentType: 'image/png',
+        contentType: contentType,
         upsert: true,
       });
 
@@ -115,10 +118,7 @@ exports.handler = async (event, context) => {
       console.error('Supabase Storage upload failed:', uploadError.message || uploadError);
       return {
         statusCode: 500,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           success: false,
           error: 'Supabase Storage upload failed: ' + (uploadError.message || 'Unknown storage error'),
@@ -138,10 +138,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         success: true,
         id: filename,

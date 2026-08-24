@@ -40,7 +40,7 @@ const CONFIG = {
   // +/- noise per color channel per pixel.
   GRAIN_AMOUNT: 16,
 
-  COUNTDOWN_STEP_MS: 800,
+  COUNTDOWN_STEP_MS: 1000,
   PUZZLE_MAX_DIM_PX: 420,
   SUCCESS_OVERLAY_MS: 1400
 };
@@ -342,7 +342,7 @@ function triggerCapture(){
 function startCountdown(){
   // Ensure any previous countdown is cleared
   if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-  let n = 3;
+  let n = 5;
   countdownEl.textContent = n;
   countdownEl.style.display = 'flex';
   setStatus('Get ready…');
@@ -870,17 +870,45 @@ async function uploadAndGenerateQR() {
   }
 
   try {
-    const dataUrl = stripCanvas.toDataURL('image/png');
-    const res = await fetch('/api/upload', {
+    const dataUrl = stripCanvas.toDataURL('image/jpeg', 0.90);
+    const requestUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8080'
+      ? 'https://gesturesnap2.netlify.app/api/upload'
+      : '/api/upload';
+    console.log(`[Upload Diagnostic] Sending POST request to ${requestUrl} (Payload length: ${dataUrl.length} chars)`);
+
+    const res = await fetch(requestUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*'
+      },
       body: JSON.stringify({ image: dataUrl })
     });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Upload response status ${res.status}: ${errText}`);
+
+    const statusStr = `${res.status} ${res.statusText}`;
+    console.log(`[Upload Diagnostic] Response Status: ${statusStr}`);
+    console.log(`[Upload Diagnostic] Response URL: ${res.url}`);
+
+    const resHeadersObj = {};
+    if (res.headers && res.headers.forEach) {
+      res.headers.forEach((val, key) => { resHeadersObj[key] = val; });
     }
-    const json = await res.json();
+    console.log(`[Upload Diagnostic] Response Headers:`, resHeadersObj);
+
+    const errText = await res.text();
+    console.log(`[Upload Diagnostic] Response Body:`, errText);
+
+    if (!res.ok) {
+      throw new Error(`Upload response status ${statusStr}: ${errText || '[Empty Response Body]'}`);
+    }
+
+    let json;
+    try {
+      json = JSON.parse(errText);
+    } catch(e) {
+      throw new Error(`Invalid JSON response (Status ${statusStr}): ${errText}`);
+    }
+
     if (json && json.success) {
       let fullQrUrl = json.fullQrUrl;
       if (!fullQrUrl && json.downloadUrl) {
@@ -905,7 +933,7 @@ async function uploadAndGenerateQR() {
       }
       startQrCountdown(60);
     } else {
-      throw new Error((json && json.error) || 'Upload response error');
+      throw new Error((json && json.error) || `Upload error: ${errText}`);
     }
   } catch (err) {
     console.error('Backend upload error:', err);
