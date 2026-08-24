@@ -1,5 +1,5 @@
-const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -43,40 +43,37 @@ exports.handler = async (event, context) => {
     };
   }
 
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Supabase configuration error: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing from environment.');
+    return {
+      statusCode: 500,
+      headers,
+      body: 'Server configuration error',
+    };
+  }
+
   try {
-    let imageBuffer = null;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Primary storage: Retrieve exact key using Netlify Blobs "uploads" store
-    try {
-      const { getStore } = require('@netlify/blobs');
-      const store = getStore('uploads');
-      const blobData = await store.get(safeFilename, { type: 'arrayBuffer' });
-      if (blobData) {
-        imageBuffer = Buffer.from(blobData);
-      }
-    } catch (blobErr) {
-      console.warn('Netlify Blobs fetch failed, trying local storage fallback:', blobErr.message);
-    }
+    // Retrieve file buffer from Supabase Storage public "GestureSnap" bucket
+    const { data: blobData, error: downloadError } = await supabase.storage
+      .from('GestureSnap')
+      .download(safeFilename);
 
-    // 2. Local dev fallback
-    if (!imageBuffer) {
-      const tmpPath = path.join('/tmp', safeFilename);
-      const uploadsPath = path.join(process.cwd(), 'uploads', safeFilename);
-
-      if (fs.existsSync(tmpPath)) {
-        imageBuffer = fs.readFileSync(tmpPath);
-      } else if (fs.existsSync(uploadsPath)) {
-        imageBuffer = fs.readFileSync(uploadsPath);
-      }
-    }
-
-    if (!imageBuffer) {
+    if (downloadError || !blobData) {
+      console.error('Supabase Storage download error:', downloadError ? downloadError.message : 'File not found');
       return {
         statusCode: 404,
         headers,
         body: 'File not found',
       };
     }
+
+    const arrayBuffer = await blobData.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
 
     const responseHeaders = {
       ...headers,
@@ -95,7 +92,7 @@ exports.handler = async (event, context) => {
 
       responseHeaders['Content-Disposition'] = `attachment; filename="${uniqueFilename}"`;
     } else {
-      // Preview mode: return Content-Disposition: inline
+      // Preview mode: display image inline in browser
       responseHeaders['Content-Disposition'] = 'inline';
     }
 

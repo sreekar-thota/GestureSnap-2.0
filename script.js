@@ -882,11 +882,19 @@ async function uploadAndGenerateQR() {
     }
     const json = await res.json();
     if (json && json.success) {
-      const targetUrl = json.fullQrUrl || (window.location.origin + json.downloadUrl);
-      if (qrcodeContainer) {
+      let fullQrUrl = json.fullQrUrl;
+      if (!fullQrUrl && json.downloadUrl) {
+        fullQrUrl = window.location.origin + json.downloadUrl;
+      } else if (!fullQrUrl && json.id) {
+        fullQrUrl = `https://gesturesnap2.netlify.app/download.html?id=${encodeURIComponent(json.id)}`;
+      }
+
+      console.log("QR URL:", fullQrUrl);
+
+      if (qrcodeContainer && fullQrUrl) {
         qrcodeContainer.innerHTML = '';
         new QRCode(qrcodeContainer, {
-          text: targetUrl,
+          text: fullQrUrl,
           width: 170,
           height: 170,
           colorDark: '#000000',
@@ -897,22 +905,13 @@ async function uploadAndGenerateQR() {
       }
       startQrCountdown(60);
     } else {
-      throw new Error('Upload response error');
+      throw new Error((json && json.error) || 'Upload response error');
     }
   } catch (err) {
-    console.warn('Backend upload error, fallback:', err);
+    console.error('Backend upload error:', err);
     if (qrcodeContainer) {
-      qrcodeContainer.innerHTML = '';
-      const fallbackUrl = window.location.origin + '/download.html';
-      new QRCode(qrcodeContainer, {
-        text: fallbackUrl,
-        width: 170,
-        height: 170,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.L
-      });
-      setStatus('QR Code ready!');
+      qrcodeContainer.innerHTML = `<div style="color:#ff4d4d;font-size:13px;font-weight:600;padding:15px;text-align:center;">Upload Failed<br><span style="font-size:11px;color:#aaa;">${err.message || 'Error generating QR'}</span></div>`;
+      setStatus('Upload failed — please check connection/settings.');
     }
     startQrCountdown(60);
   }
