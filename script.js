@@ -405,7 +405,6 @@ function doCapture(){
   const shot = document.createElement('canvas');
   shot.width = w; shot.height = h;
   shot.getContext('2d').drawImage(cleanCanvas, x, y, w, h, 0, 0, w, h);
-  applyFilmEffect(shot);
 
   savedPhotos.push(shot);
   photoCount++;
