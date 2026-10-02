@@ -1,4 +1,7 @@
-uploads/*.png
+uploads/*
+!uploads/.gitkeep
+*.db
+*.db-journal
 .vscode/
 __pycache__/
 *.pyc

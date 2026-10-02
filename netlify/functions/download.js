@@ -26,21 +26,21 @@ exports.handler = async (event, context) => {
   }
 
   const query = event.queryStringParameters || {};
-  const id = query.id || query.url;
-  if (!id) {
+  const token = query.id || query.session_id || query.url;
+  if (!token) {
     return {
       statusCode: 400,
-      headers,
-      body: 'Missing id parameter',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Missing session id parameter' }),
     };
   }
 
-  const safeFilename = path.basename(id).replace(/[^a-zA-Z0-9_.-]/g, '');
-  if (!safeFilename) {
+  const safeToken = path.basename(token).replace(/[^a-zA-Z0-9_.-]/g, '');
+  if (!safeToken) {
     return {
       statusCode: 400,
-      headers,
-      body: 'Invalid filename',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid session token' }),
     };
   }
 
@@ -51,52 +51,92 @@ exports.handler = async (event, context) => {
     console.error('Supabase configuration error: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing from environment.');
     return {
       statusCode: 500,
-      headers,
-      body: 'Server configuration error',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Server configuration error' }),
     };
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
 
-    // Retrieve file buffer from Supabase Storage public "GestureSnap" bucket
+    let targetFilename = safeToken;
+    let sessionMeta = null;
+    const sessionMetaFilename = `temp_session_${safeToken}.json`;
+
+    // Try reading session metadata
+    try {
+      const { data: metaBlob, error: metaErr } = await supabase.storage
+        .from('GestureSnap')
+        .download(sessionMetaFilename);
+
+      if (!metaErr && metaBlob) {
+        const text = await metaBlob.text();
+        sessionMeta = JSON.parse(text);
+        if (sessionMeta.photo_path) {
+          targetFilename = sessionMeta.photo_path;
+        }
+      }
+    } catch (e) {}
+
+    const now = Date.now();
+
+    // Check expiration if metadata exists
+    if (sessionMeta && sessionMeta.expires_at) {
+      const expiresAt = new Date(sessionMeta.expires_at).getTime();
+      if (expiresAt <= now) {
+        // Delete expired session and image
+        await supabase.storage.from('GestureSnap').remove([sessionMetaFilename, targetFilename]);
+        return {
+          statusCode: 410,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'This temporary photo strip has expired and been deleted.' }),
+        };
+      }
+    }
+
+    // Retrieve file buffer from Supabase Storage
     const { data: blobData, error: downloadError } = await supabase.storage
       .from('GestureSnap')
-      .download(safeFilename);
+      .download(targetFilename);
 
     if (downloadError || !blobData) {
       console.error('Supabase Storage download error:', downloadError ? downloadError.message : 'File not found');
       return {
         statusCode: 404,
-        headers,
-        body: 'File not found',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Photo strip not found or session has expired.' }),
       };
     }
 
     const arrayBuffer = await blobData.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
-    const ext = path.extname(safeFilename).toLowerCase();
+    const ext = path.extname(targetFilename).toLowerCase();
     const contentType = (ext === '.jpg' || ext === '.jpeg') ? 'image/jpeg' : 'image/png';
 
     const responseHeaders = {
       ...headers,
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
     };
 
     const isDownload = query.download === '1' || query.download === 'true';
 
     if (isDownload) {
-      const now = new Date();
+      const nowObj = new Date();
       const pad = (n) => String(n).padStart(2, '0');
-      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-      const uniqueTag = safeFilename.replace(/^strip_/, '').replace(/\.png$/, '');
-      const uniqueFilename = `GestureSnap-PhotoStrip-${dateStr}-${uniqueTag}.png`;
+      const dateStr = `${nowObj.getFullYear()}-${pad(nowObj.getMonth() + 1)}-${pad(nowObj.getDate())}`;
+      const uniqueFilename = `GestureSnap-PhotoStrip-${dateStr}.png`;
 
       responseHeaders['Content-Disposition'] = `attachment; filename="${uniqueFilename}"`;
     } else {
-      // Preview mode: display image inline in browser
+      // Preview mode
       responseHeaders['Content-Disposition'] = 'inline';
     }
 
@@ -110,8 +150,8 @@ exports.handler = async (event, context) => {
     console.error('Download Netlify function error:', error);
     return {
       statusCode: 500,
-      headers,
-      body: 'Internal Server Error',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Internal Server Error' }),
     };
   }
 };

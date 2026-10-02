@@ -1,5 +1,53 @@
 try { require('dotenv').config(); } catch (e) {}
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+
+const QR_EXPIRY_SECONDS = 60; // Exact QR countdown duration
+
+// Helper to cleanup expired records and objects in Supabase storage
+async function cleanupExpiredSupabaseSessions(supabase) {
+  try {
+    const { data: files, error } = await supabase.storage.from('GestureSnap').list('', { limit: 100 });
+    if (error || !files) return;
+
+    const now = Date.now();
+    const filesToDelete = [];
+
+    for (const file of files) {
+      if (file.name.startsWith('temp_session_') && file.name.endsWith('.json')) {
+        // Download metadata
+        try {
+          const { data: blob } = await supabase.storage.from('GestureSnap').download(file.name);
+          if (blob) {
+            const text = await blob.text();
+            const sessionData = JSON.parse(text);
+            const exp = new Date(sessionData.expires_at).getTime();
+            if (exp <= now) {
+              filesToDelete.push(file.name);
+              if (sessionData.photo_path) {
+                filesToDelete.push(sessionData.photo_path);
+              }
+            }
+          }
+        } catch (err) {}
+      } else if (file.created_at) {
+        // Any orphan or legacy file older than 5 minutes
+        const fileCreated = new Date(file.created_at).getTime();
+        if (now - fileCreated > 5 * 60 * 1000) {
+          filesToDelete.push(file.name);
+        }
+      }
+    }
+
+    if (filesToDelete.length > 0) {
+      const uniqueFiles = [...new Set(filesToDelete)];
+      await supabase.storage.from('GestureSnap').remove(uniqueFiles);
+      console.log('[Supabase Cleanup] Deleted expired objects:', uniqueFiles);
+    }
+  } catch (err) {
+    console.error('[Supabase Cleanup Error]', err);
+  }
+}
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -41,6 +89,16 @@ exports.handler = async (event, context) => {
       };
     }
 
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    // Run cleanup on upload
+    await cleanupExpiredSupabaseSessions(supabase);
+
     let body = {};
     if (event.body) {
       try {
@@ -62,12 +120,17 @@ exports.handler = async (event, context) => {
       };
     }
 
+    const duration = (typeof body.duration === 'number' && body.duration > 0) ? body.duration : QR_EXPIRY_SECONDS;
+
     const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
     const contentType = mimeMatch ? mimeMatch[1] : 'image/png';
     const ext = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';
 
-    const uniqueSuffix = Math.random().toString(36).substring(2, 8);
-    const filename = `strip_${Date.now()}_${uniqueSuffix}.${ext}`;
+    // Cryptographically secure unpredictable session ID
+    const sessionId = `gs_${crypto.randomBytes(16).toString('hex')}`;
+    const imageFilename = `temp_${sessionId}.${ext}`;
+    const sessionMetaFilename = `temp_session_${sessionId}.json`;
+
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
@@ -99,17 +162,13 @@ exports.handler = async (event, context) => {
       baseUrl = process.env.URL;
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    const createdAt = new Date();
+    const expiresAt = new Date(createdAt.getTime() + duration * 1000);
 
-    // Upload image buffer to Supabase Storage public "GestureSnap" bucket
+    // Upload image buffer to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('GestureSnap')
-      .upload(filename, buffer, {
+      .upload(imageFilename, buffer, {
         contentType: contentType,
         upsert: true,
       });
@@ -126,14 +185,22 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Retrieve public URL for uploaded photo strip
-    const { data: publicUrlData } = supabase.storage
+    // Save temporary session metadata record
+    const sessionMetadata = {
+      session_id: sessionId,
+      photo_path: imageFilename,
+      created_at: createdAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    };
+
+    await supabase.storage
       .from('GestureSnap')
-      .getPublicUrl(filename);
+      .upload(sessionMetaFilename, Buffer.from(JSON.stringify(sessionMetadata)), {
+        contentType: 'application/json',
+        upsert: true,
+      });
 
-    const supabasePublicUrl = publicUrlData ? publicUrlData.publicUrl : '';
-
-    const downloadPath = `/download.html?id=${encodeURIComponent(filename)}`;
+    const downloadPath = `/download.html?id=${encodeURIComponent(sessionId)}`;
     const fullQrUrl = `${baseUrl.replace(/\/$/, '')}${downloadPath}`;
 
     return {
@@ -141,14 +208,15 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        id: filename,
+        id: sessionId,
+        session_id: sessionId,
+        expires_in: duration,
         downloadUrl: downloadPath,
         fullQrUrl: fullQrUrl,
-        supabasePublicUrl: supabasePublicUrl,
       }),
     };
   } catch (error) {
-    console.error('Upload Netlify function top-level error:', error);
+    console.error('Upload Netlify function error:', error);
     return {
       statusCode: 500,
       headers,

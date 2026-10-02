@@ -13,3 +13,15 @@
   to = "/.netlify/functions/download"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/delete"
+  to = "/.netlify/functions/delete"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/invalidate"
+  to = "/.netlify/functions/delete"
+  status = 200
+  force = true

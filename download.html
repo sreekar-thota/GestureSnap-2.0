@@ -194,6 +194,13 @@
             const stripImg = document.getElementById('stripPreviewImg');
             const downloadBtn = document.getElementById('downloadBtn');
 
+            function showExpiredMessage() {
+                const card = document.querySelector('.card');
+                if (card) {
+                    card.innerHTML = '<h2>⚠️ Photo Strip Expired</h2><p>This temporary photo strip has expired and been deleted from storage for your privacy.</p><p style="margin-top: 15px; font-size: 0.8rem; color: var(--text2);">Please capture a new photo strip at the photo booth to generate a fresh QR code.</p>';
+                }
+            }
+
             if (photoParam) {
                 let previewUrl = '';
                 let downloadUrl = '';
@@ -207,14 +214,31 @@
                     downloadUrl = `/api/download?id=${encodeURIComponent(cleanId)}&download=1`;
                 }
 
+                stripImg.onerror = function() {
+                    showExpiredMessage();
+                };
+
                 stripImg.src = previewUrl;
 
-                downloadBtn.addEventListener('click', function() {
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                downloadBtn.addEventListener('click', async function() {
+                    try {
+                        const res = await fetch(downloadUrl);
+                        if (!res.ok) {
+                            showExpiredMessage();
+                            return;
+                        }
+                        const blob = await res.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = `GestureSnap-PhotoStrip-${new Date().toISOString().slice(0,10)}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                    } catch (e) {
+                        window.location.href = downloadUrl;
+                    }
                 });
             } else {
                 document.querySelector('.card').innerHTML = '<h2>Photo Strip Not Found</h2><p>Please scan a valid GestureSnap QR code from the photo booth.</p>';

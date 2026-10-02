@@ -246,6 +246,28 @@ let lockedBox = null;
 let stableAnchor = null;
 const savedPhotos = [];
 let qrTimerInterval = null;
+let activeSessionId = null;
+
+function deleteSessionFromServer(sessionId) {
+  if (!sessionId) return;
+  const deleteUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8080'
+    ? 'https://gesturesnap2.netlify.app/api/delete'
+    : '/api/delete';
+  try {
+    fetch(deleteUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: sessionId }),
+      keepalive: true
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+window.addEventListener('beforeunload', () => {
+  if (activeSessionId) {
+    deleteSessionFromServer(activeSessionId);
+  }
+});
 
 function startQrCountdown(seconds = 60) {
   if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
@@ -259,6 +281,10 @@ function startQrCountdown(seconds = 60) {
     if (timeLeft <= 0) {
       clearInterval(qrTimerInterval);
       qrTimerInterval = null;
+      if (activeSessionId) {
+        deleteSessionFromServer(activeSessionId);
+        activeSessionId = null;
+      }
       resetSession();
     }
   }, 1000);
@@ -444,6 +470,10 @@ function doCapture(){
 if (resetBtn) resetBtn.addEventListener('click', resetSession);
 
 function resetSession(){
+  if (activeSessionId) {
+    deleteSessionFromServer(activeSessionId);
+    activeSessionId = null;
+  }
   savedPhotos.length = 0;
   photoCount = 0;
   refreshCounter();
@@ -909,6 +939,7 @@ async function uploadAndGenerateQR() {
     }
 
     if (json && json.success) {
+      activeSessionId = json.id || json.session_id;
       let fullQrUrl = json.fullQrUrl;
       if (!fullQrUrl && json.downloadUrl) {
         fullQrUrl = window.location.origin + json.downloadUrl;
@@ -930,7 +961,8 @@ async function uploadAndGenerateQR() {
         });
         setStatus('QR Code generated! Scan with your phone.');
       }
-      startQrCountdown(60);
+      const expiryDuration = (json.expires_in && typeof json.expires_in === 'number') ? json.expires_in : 60;
+      startQrCountdown(expiryDuration);
     } else {
       throw new Error((json && json.error) || `Upload error: ${errText}`);
     }
